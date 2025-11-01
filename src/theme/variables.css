@@ -1,0 +1,38 @@
+:root {
+  /* Primary palette */
+  --ion-color-primary: #3b82f6;
+  --ion-color-primary-rgb: 59, 130, 246;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #357ae8;
+  --ion-color-primary-tint: #4a8ff8;
+
+  /* Secondary and tertiary */
+  --ion-color-secondary: #10b981;
+  --ion-color-tertiary: #6366f1;
+
+  /* Success / Warning / Danger */
+  --ion-color-success: #16a34a;
+  --ion-color-warning: #f59e0b;
+  --ion-color-danger: #ef4444;
+
+  /* Light and Dark text surfaces */
+  --ion-background-color: #f9fafb;
+  --ion-text-color: #111827;
+  --ion-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* 🩺 Center all IonToolbar titles perfectly */
+ion-toolbar ion-title {
+  text-align: center;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-weight: 600;
+}
+
+ion-toolbar ion-buttons[slot="start"],
+ion-toolbar ion-buttons[slot="end"] {
+  z-index: 2;
+}
