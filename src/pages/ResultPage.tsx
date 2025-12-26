@@ -69,7 +69,7 @@ const ResultPage: React.FC = () => {
   >([]);
   const [loadingProjection, setLoadingProjection] = useState(false);
 
-  // Adding yser friendly display names for model features
+  //Adding display names for model features
   const FEATURE_NAME_MAP: Record<string, string> = {
     AGE: "Age",
     BMI: "Body Mass Index (BMI)",
@@ -249,7 +249,7 @@ const ResultPage: React.FC = () => {
     }
   }, [result, inputs]);
 
-  // Calculate 5-year and 10-year risk projections using ONNX models
+  //Calculate 5-year and 10-year risk projections using ONNX models
   useEffect(() => {
     const computeProjection = async () => {
       if (!result || !inputs || !inputs.AGE) return;
@@ -265,11 +265,9 @@ const ResultPage: React.FC = () => {
           let riskProb = 0;
 
           if (result.type === "heart") {
-            // Heart model expects a Record<string, number>
             const heartRes = await runHeartModel(modifiedInputs);
             riskProb = heartRes.probability ?? 0;
           } else if (result.type === "glucose") {
-            // Glucose model expects a numeric array in specific order
             const featureOrder = [
               "AGE",
               "BMI",
@@ -442,7 +440,6 @@ const ResultPage: React.FC = () => {
                   Probability Breakdown
                 </h3>
 
-                {/* Stacked bar */}
                 <div
                   style={{
                     display: "flex",
@@ -642,7 +639,7 @@ const ResultPage: React.FC = () => {
               </IonButton>
             )}
 
-            {/* Modal for Full Plan */}
+            {/*Modal for Full Plan */}
             <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
               <IonHeader translucent>
                 <IonToolbar color="danger">

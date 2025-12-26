@@ -86,18 +86,21 @@ const ChatPage: React.FC = () => {
         const glucoInputs = glucoData?.inputs || {};
         const heartInputs = heartData?.inputs || {};
 
+        //Create diabetes risk summary
         const glucoSummary =
             glucoData &&
             `🩸 Glucose: ${glucoCat} risk | Age: ${glucoInputs.AGE ?? "?"}, BMI: ${glucoInputs.BMI ?? "?"
             }, Glucose: ${glucoInputs.GLU ?? "?"}, Active: ${glucoInputs.PA_ANY === 1 ? "Yes" : "No"
             }`;
 
+        //Create heart risk summary
         const heartSummary =
             heartData &&
             `❤️ Heart: ${heartCat} risk | Age: ${heartInputs.AGE ?? "?"}, BMI: ${heartInputs.BMI ?? "?"
             }, Hypertension: ${heartInputs.HTN_FLAG === 1 ? "Yes" : "No"
             }, Smoker: ${heartInputs.SMOKING_IDX === 1 ? "Yes" : "No"}`;
 
+        //Set message
         if (heartData && glucoData) {
             setMessages([
                 {
@@ -147,7 +150,7 @@ const ChatPage: React.FC = () => {
         setLoading(false);
     };
 
-    //Quick prompt chips ---
+    //Set quick prompts
     const quickPrompts = [
         "🍛 Show Indian meal plan for diabetes",
         "🏃 Recommend morning exercises for heart health",
@@ -170,7 +173,7 @@ const ChatPage: React.FC = () => {
             </IonHeader>
 
             <IonContent className="ion-padding">
-                {/* Quick-start prompts */}
+                {/*Quickstart prompts*/}
                 <div
                     style={{
                         display: "flex",
@@ -191,7 +194,7 @@ const ChatPage: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Chat messages */}
+                {/*Chat message */}
                 <IonList>
                     {messages.map((msg, idx) => (
                         <IonItem key={idx} lines="none">
@@ -222,8 +225,6 @@ const ChatPage: React.FC = () => {
                         <IonIcon icon={sendOutline} slot="icon-only" />
                     </IonButton>
                 </IonItem>
-
-
 
                 <IonButton onClick={() => { clearChatHistory(); window.location.reload(); }}>
                     🗑️ New Chat

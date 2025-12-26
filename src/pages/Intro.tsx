@@ -22,7 +22,7 @@ const Intro: React.FC = () => {
         <IonToolbar color="primary">
           <IonTitle slot="primary">HealthLens</IonTitle>
 
-          {/*Help Icon Button */}
+          {/*Help Button */}
           <IonButtons slot="end">
             <IonButton onClick={() => history.push("/help")}>
               <IonIcon icon={helpCircleOutline} slot="icon-only" />
@@ -66,7 +66,7 @@ const Intro: React.FC = () => {
           💬 Chat with Health Coach
         </IonButton>
 
-        {/*Disclaimer Section*/}
+        {/*Disclaimer*/}
         <IonText
           color="medium"
           style={{

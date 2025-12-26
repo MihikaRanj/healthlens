@@ -13,10 +13,10 @@ import { runHeartModel } from "../onnxPredictor";
 const HeartPredictor: React.FC = () => {
   const history = useHistory();
 
-  //Load saved form data (if any)
+  //Load saved form data
   const savedData = JSON.parse(localStorage.getItem("heartFormData") || "{}");
 
-  // Demographics
+  //Demographics
   const [age, setAge] = useState<number>(savedData.AGE || 0);
   const [heightFt, setHeightFt] = useState<number>(savedData.heightFt || 0);
   const [heightIn, setHeightIn] = useState<number>(savedData.heightIn || 0);
@@ -25,7 +25,7 @@ const HeartPredictor: React.FC = () => {
   const [bmi, setBmi] = useState<number>(savedData.BMI || 0);
   const [gender, setGender] = useState<string>(savedData.gender || "male");
 
-  // Clinical & lifestyle factors
+  //Clinical & lifestyle factors
   const [paAny, setPaAny] = useState<number>(savedData.PA_ANY || 0);
   const [paIndex, setPaIndex] = useState<number>(savedData.PA_INDEX || 0);
   const [activityType, setActivityType] = useState<number>(savedData.ACTIVITY_TYPE_CODE || 0);
@@ -39,7 +39,7 @@ const HeartPredictor: React.FC = () => {
   const [alc, setAlc] = useState<boolean>(savedData.ALC_FLAG === 1);
   const [stress, setStress] = useState<number>(savedData.STRESS_SCORE || 0);
 
-  //Auto BMI calculation
+  //BMI calculation
   useEffect(() => {
     if (heightFt && weight) {
       const hMeters = ((heightFt * 12 + (heightIn || 0)) * 2.54) / 100;
@@ -48,7 +48,7 @@ const HeartPredictor: React.FC = () => {
     }
   }, [heightFt, heightIn, weight, unit]);
 
-  //Auto-save to localStorage
+  //save to localStorage
   useEffect(() => {
     const formData = {
       AGE: age,
@@ -75,7 +75,7 @@ const HeartPredictor: React.FC = () => {
   }, [age, heightFt, heightIn, weight, unit, bmi, gender, paAny, paIndex, activityType,
       exerFreq, strengthFreq, insured, smoking, htn, chol, cholScreen, alc, stress]);
 
-  //Clear button — resets fields + removes saved data + healthSummary.heart
+  //Clear button
   const handleClear = () => {
     localStorage.removeItem("heartFormData");
     localStorage.removeItem("heartRiskData");
@@ -86,7 +86,7 @@ const HeartPredictor: React.FC = () => {
       localStorage.setItem("healthSummary", JSON.stringify(summary));
     }
 
-    // Reset all states
+    //Reset states
     setAge(0); setHeightFt(0); setHeightIn(0); setWeight(0);
     setUnit("kg"); setBmi(0); setGender("male");
     setPaAny(0); setPaIndex(0); setActivityType(0);
@@ -101,7 +101,7 @@ const HeartPredictor: React.FC = () => {
     const safe = (v: number | undefined, fallback = 0) =>
       isNaN(Number(v)) ? fallback : Number(v);
 
-    //Mandatory field validation
+    //Validate mandatory fields
     if (
       !age ||
       !heightFt ||
@@ -115,7 +115,7 @@ const HeartPredictor: React.FC = () => {
       return;
     }
 
-    //Safe defaults for optional / missing fields
+    //defaults for fields
     const STRESS_SCORE = safe(stress, 0);
     const ALC_FLAG = alc ? 1 : 0;
     const CHOL_FLAG = chol ? 1 : 0;
@@ -158,16 +158,15 @@ const HeartPredictor: React.FC = () => {
       const result = await runHeartModel(inputMap);
       console.log("✅ Model Output:", result);
 
-      // Save result
+      //Save result
       const riskData = { inputs: inputMap, result: { ...result, type: "heart" } };
       localStorage.setItem("heartRiskData", JSON.stringify(riskData));
 
-      // Update healthSummary
+      //Update healthSummary
       const summary = JSON.parse(localStorage.getItem("healthSummary") || "{}");
       summary.heart = riskData;
       localStorage.setItem("healthSummary", JSON.stringify(summary));
 
-      // Navigate to result page
       history.push("/result", {
         result: { ...result, type: "heart" },
         inputs: inputMap,

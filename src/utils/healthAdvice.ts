@@ -40,7 +40,7 @@ export function generateHealthAdvice(
     if (inputs.STRESS_SCORE > 5)
       advice.push("Manage stress through breathing exercises, sleep, or mindfulness.");
 
-    //Refined category-based guidance
+    //Refined category based guidance
     if (advice.length === 0) {
       if (category === "Normal") {
         advice.push("Great job — maintain your current healthy habits to keep glucose levels steady!");
