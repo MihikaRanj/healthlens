@@ -18,6 +18,7 @@ import {
   IonFooter,
 } from "@ionic/react";
 
+
 import {
   LineChart,
   Line,
@@ -27,19 +28,14 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { runGlucoseModel } from "../onnxPredictor";
-import { runHeartModel } from "../onnxPredictor";
-
+import { runGlucoseModel, runHeartModel } from "../onnxPredictor";
 
 import { useLocation, useHistory } from "react-router-dom";
 import { generateHealthAdvice } from "../utils/healthAdvice";
 import { fetchCustomHealthPlan } from "../utils/healthAdviceAPI";
-import { homeOutline } from "ionicons/icons";
+import { homeOutline, closeOutline } from "ionicons/icons";
 import heartFeatureImportances from "../data/heart_risk_feature_importance.json";
 import glucoFeatureImportances from "../data/gluco_risk_feature_importance.json";
-
-
-import { closeOutline } from "ionicons/icons";
 
 interface ModelResult {
   type: "heart" | "glucose";
@@ -69,45 +65,40 @@ const ResultPage: React.FC = () => {
   >([]);
   const [loadingProjection, setLoadingProjection] = useState(false);
 
-  //Adding display names for model features
   const FEATURE_NAME_MAP: Record<string, string> = {
     AGE: "Age",
     BMI: "Body Mass Index (BMI)",
-    SEX_MALE: "Sex (Male)",
+    SEX_MALE: "Sex",
     HTN_FLAG: "High Blood Pressure",
     SMOKING_IDX: "Smoking Status",
-    GLU: "Fasting Glucose (mg/dL)",
-    PA_ANY: "Physically Active",
+    GLU: "Fasting Blood Sugar",
+    PA_ANY: "Physical Activity",
     STRESS_SCORE: "Stress Level",
-    PA_INDEX: "Physical Activity Index",
-    STRESSxPA: "Stress × Activity Interaction",
+    PA_INDEX: "Weekly Activity Guideline",
+    STRESSxPA: "Stress and Activity Pattern",
     ALC_FLAG: "Heavy Drinking",
     CHOL_FLAG: "High Cholesterol",
-    CHOL_SCREEN: "No Recent Cholesterol Check",
-    EXER_FREQ_WK: "Exercise Frequency",
+    CHOL_SCREEN: "Recent Cholesterol Check",
+    EXER_FREQ_WK: "Aerobic Exercise Frequency",
     STRENGTH_FREQ: "Strength Exercise Frequency",
     INSURED_FLAG: "Health Insurance",
-    ACTIVITY_TYPE_CODE: "Activity Type Code",
+    ACTIVITY_TYPE_CODE: "Primary Exercise Type",
 
     "High Blood Pressure (1=Yes)": "High Blood Pressure",
     "High Cholesterol (1=Yes)": "High Cholesterol",
     "Body Mass Index (BMI)": "Body Mass Index (BMI)",
-    "Exercise Frequency (sessions/week)": "Exercise Frequency",
+    "Exercise Frequency (sessions/week)": "Aerobic Exercise Frequency",
     "Strength Exercise Frequency (sessions/week)": "Strength Exercise Frequency",
     "Stress Level (0–30 days)": "Stress Level",
-    "Smoker (1=Yes)": "Smoker",
-    "Physically Active (1=Yes)": "Physically Active",
-    "No Recent Cholesterol Check (1=Yes)": "No Recent Cholesterol Check",
-    "Has Health Insurance (1=Yes)": "Has Health Insurance",
+    "Smoker (1=Yes)": "Smoking Status",
+    "Physically Active (1=Yes)": "Physical Activity",
+    "No Recent Cholesterol Check (1=Yes)": "Recent Cholesterol Check",
+    "Has Health Insurance (1=Yes)": "Health Insurance",
     "Heavy Drinking (1=Yes)": "Heavy Drinking",
     "Activity Type Code (1–Walking, 2–Running, 3–Cycling, etc.)":
-      "Primary Activity Type",
+      "Primary Exercise Type",
   };
 
-
-
-
-  // Generate personalized feature insights for both Heart and Glucose Models
   useEffect(() => {
     if (!result || !inputs) return;
 
@@ -118,56 +109,108 @@ const ResultPage: React.FC = () => {
           ? glucoFeatureImportances
           : [];
 
-    const factors = importances
+    const factors = [...importances]
       .sort((a, b) => b.importance_percent - a.importance_percent)
-      .slice(0, 6)
       .map((factor) => {
         let message = "";
 
         if (result.type === "heart") {
           switch (factor.feature) {
             case "Age":
-              if (inputs.AGE > 50)
-                message = "Older age increases cardiovascular risk.";
+              if (inputs.AGE >= 55) {
+                message =
+                  "Age is one of the background factors considered in your heart health result.";
+              } else {
+                message =
+                  "Age is one of the background factors the model uses along with lifestyle and health history.";
+              }
               break;
+
             case "High Blood Pressure":
-              if (inputs.HTN_FLAG === 1)
-                message = "Managing blood pressure can reduce heart strain.";
+              if (inputs.HTN_FLAG === 1) {
+                message =
+                  "Blood pressure appears to be an important part of your current heart health pattern.";
+              } else {
+                message =
+                  "Blood pressure is one of the health factors considered alongside exercise, cholesterol, and stress patterns.";
+              }
               break;
+
             case "High Cholesterol":
-              if (inputs.CHOL_FLAG === 1)
-                message = "High cholesterol may cause plaque buildup in arteries.";
+              if (inputs.CHOL_FLAG === 1) {
+                message =
+                  "Cholesterol may be contributing to your result alongside other lifestyle and health factors.";
+              } else {
+                message =
+                  "Cholesterol is one of the health factors included in this heart health estimate.";
+              }
               break;
+
             case "Body Mass Index (BMI)":
-              if (inputs.BMI > 25)
+              if (inputs.BMI >= 27) {
                 message = `Your BMI of ${inputs.BMI.toFixed(
                   1
-                )} suggests weight management could improve heart health.`;
+                )} may be increasing strain on your heart and influencing this result.`;
+              } else if (inputs.BMI >= 25) {
+                message = `Your BMI of ${inputs.BMI.toFixed(
+                  1
+                )} is one of the health factors considered in this heart result.`;
+              } else {
+                message =
+                  "Body composition is one of the factors the model considers when estimating heart health patterns.";
+              }
               break;
+
             case "Exercise Frequency (sessions/week)":
-              if (inputs.EXER_FREQ_WK < 3)
+              if (inputs.EXER_FREQ_WK < 3) {
                 message =
-                  "Aim for at least 3 sessions of aerobic activity per week.";
+                  "Your current aerobic exercise frequency is lower than the level often associated with stronger heart protection.";
+              } else {
+                message =
+                  "Aerobic exercise frequency is one of the strongest lifestyle factors linked to heart health.";
+              }
               break;
+
             case "Strength Exercise Frequency (sessions/week)":
-              if (inputs.STRENGTH_FREQ < 2)
+              if (inputs.STRENGTH_FREQ < 2) {
                 message =
-                  "Add strength training twice weekly to support cardiovascular fitness.";
+                  "Adding regular strength exercise may improve your overall fitness profile and support heart health.";
+              } else {
+                message =
+                  "Strength exercise is one of the habits the model considers as part of overall heart health.";
+              }
               break;
+
             case "Stress Level (0–30 days)":
-              if (inputs.STRESS_SCORE > 10)
+              if (inputs.STRESS_SCORE > 10) {
                 message =
-                  "High stress can affect heart rhythm; consider mindfulness or relaxation exercises.";
+                  "Stress may be playing a bigger role in your result, especially when paired with lower activity levels.";
+              } else {
+                message =
+                  "Stress is one of the lifestyle factors included in this heart health estimate.";
+              }
               break;
+
             case "Smoker":
-              if (inputs.SMOKING_IDX === 1)
+              if (inputs.SMOKING_IDX === 1) {
                 message =
-                  "Smoking greatly increases cardiovascular risk — quitting helps within weeks.";
+                  "Smoking appears to be contributing to your current heart health risk pattern.";
+              } else {
+                message =
+                  "Smoking status is one of the lifestyle factors the model considers.";
+              }
               break;
+
             case "Physically Active":
-              if (inputs.PA_ANY === 0)
-                message = "Being more active significantly improves heart health.";
+              if (inputs.PA_ANY === 0) {
+                message =
+                  "Your current activity pattern may not be strong enough yet to offset other heart risk factors.";
+              } else {
+                message =
+                  "Physical activity is one of the strongest protective lifestyle factors included in this result.";
+              }
               break;
+
             default:
               break;
           }
@@ -176,40 +219,74 @@ const ResultPage: React.FC = () => {
         if (result.type === "glucose") {
           switch (factor.feature) {
             case "AGE":
-              if (inputs.AGE > 50)
+              if (inputs.AGE >= 50) {
                 message =
-                  "Risk of insulin resistance tends to rise with age. Maintain active lifestyle.";
+                  "Age is one of the background factors considered in your glucose health result.";
+              } else {
+                message =
+                  "Age is one of the background factors the model uses along with lifestyle and health inputs.";
+              }
               break;
+
             case "BMI":
-              if (inputs.BMI > 25)
+              if (inputs.BMI >= 25) {
                 message = `Your BMI of ${inputs.BMI.toFixed(
                   1
-                )} suggests that even small weight loss can improve glucose control.`;
+                )} may be affecting how efficiently your body manages blood sugar.`;
+              } else {
+                message =
+                  "Body composition is one of the factors the model considers when estimating glucose health patterns.";
+              }
               break;
+
             case "GLU":
-              if (inputs.GLU && inputs.GLU > 100)
-                message = `Fasting glucose ${inputs.GLU} mg/dL is slightly elevated — consider monitoring diet and sugar intake.`;
+              if (inputs.GLU && inputs.GLU > 100) {
+                message = `Your fasting blood sugar value of ${inputs.GLU} mg/dL may be contributing noticeably to this result.`;
+              } else if (inputs.GLU) {
+                message = `Your fasting blood sugar value of ${inputs.GLU} mg/dL is one of the strongest inputs used in this glucose health result.`;
+              }
               break;
+
             case "HTN_FLAG":
-              if (inputs.HTN_FLAG === 1)
+              if (inputs.HTN_FLAG === 1) {
                 message =
-                  "High blood pressure can worsen insulin resistance and diabetes risk.";
+                  "Blood pressure and glucose health can be connected, so this may be influencing your result.";
+              } else {
+                message =
+                  "Blood pressure is one of the health factors considered alongside glucose and activity patterns.";
+              }
               break;
+
             case "SMOKING_IDX":
-              if (inputs.SMOKING_IDX > 0)
+              if (inputs.SMOKING_IDX > 0) {
                 message =
-                  "Smoking increases inflammation and risk of developing diabetes.";
+                  "Smoking may be adding to your glucose-related risk pattern alongside other factors.";
+              } else {
+                message =
+                  "Smoking status is one of the lifestyle factors included in the model.";
+              }
               break;
+
             case "PA_ANY":
-              if (inputs.PA_ANY === 0)
+              if (inputs.PA_ANY === 0) {
                 message =
-                  "Regular activity improves insulin sensitivity and helps manage glucose.";
+                  "Your activity level may be affecting how efficiently your body manages blood sugar.";
+              } else {
+                message =
+                  "Physical activity is one of the strongest lifestyle factors linked to healthy blood sugar regulation.";
+              }
               break;
+
             case "SEX_MALE":
-              if (inputs.SEX_MALE === 1)
+              if (inputs.SEX_MALE === 1) {
                 message =
-                  "Men have slightly higher diabetes risk; regular screening is advised.";
+                  "Sex is one of several background factors included in the model, together with lifestyle and health inputs.";
+              } else {
+                message =
+                  "Background demographic factors are considered together with lifestyle and health inputs.";
+              }
               break;
+
             default:
               break;
           }
@@ -221,11 +298,11 @@ const ResultPage: React.FC = () => {
           message,
         };
       })
-      .filter((f) => f.message);
+      .filter((f) => f.message)
+      .slice(0, 3);
 
     setUserFactors(factors);
   }, [result, inputs]);
-
 
   useEffect(() => {
     setCustomPlan("");
@@ -249,7 +326,6 @@ const ResultPage: React.FC = () => {
     }
   }, [result, inputs]);
 
-  //Calculate 5-year and 10-year risk projections using ONNX models
   useEffect(() => {
     const computeProjection = async () => {
       if (!result || !inputs || !inputs.AGE) return;
@@ -287,7 +363,6 @@ const ResultPage: React.FC = () => {
             if (gluRes.probabilities && gluRes.probabilities.length >= 3) {
               riskProb = gluRes.probabilities[2];
             }
-
           }
 
           dataPoints.push({
@@ -297,7 +372,6 @@ const ResultPage: React.FC = () => {
         }
 
         setRiskProjection(dataPoints);
-        console.log("Projection data:", dataPoints);
       } catch (err) {
         console.error("Projection Error:", err);
       } finally {
@@ -308,17 +382,18 @@ const ResultPage: React.FC = () => {
     computeProjection();
   }, [result, inputs]);
 
-
   if (!result) {
     return (
       <IonPage>
         <IonHeader>
           <IonToolbar color="danger">
-            <IonTitle>Prediction Result</IonTitle>
+            <IonTitle>Health Result</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
-          <h2>No result found. Please run the prediction again.</h2>
+          <h2 style={{ lineHeight: 1.4 }}>
+            No saved result found yet. Complete a Heart Check or Glucose Check first.
+          </h2>
           <IonButton expand="block" color="danger" onClick={() => history.push("/")}>
             Go Back
           </IonButton>
@@ -328,20 +403,24 @@ const ResultPage: React.FC = () => {
   }
 
   const titles: Record<string, string> = {
-    heart: "Heart Disease Risk",
-    glucose: "Diabetes Risk",
+    heart: "Heart Health Check",
+    glucose: "Glucose Health Check",
   };
 
   let category = result.category || "";
   let probability = result.probability ?? 0;
   let probs: number[] = [];
 
-  if (result.type === "glucose" && result.probabilities && result.probabilities.length === 3) {
+  if (
+    result.type === "glucose" &&
+    result.probabilities &&
+    result.probabilities.length === 3
+  ) {
     probs = result.probabilities;
     const labels = ["Normal", "Prediabetic", "Diabetic"];
     const maxIdx = probs.indexOf(Math.max(...probs));
     category = labels[maxIdx];
-    probability = probs[maxIdx]; // show highest probability as summary value
+    probability = probs[maxIdx];
   }
 
   const percent = (probability * 100).toFixed(1);
@@ -353,20 +432,23 @@ const ResultPage: React.FC = () => {
   const message =
     result.type === "heart"
       ? category === "Low"
-        ? "Great job! Your predicted heart disease risk is low. Keep maintaining a healthy lifestyle!"
+        ? "Your answers suggest a lower heart health risk pattern right now. Keep maintaining the healthy habits that are supporting you."
         : category === "Moderate"
-          ? "Your predicted heart risk is moderate. Consider regular check-ups and staying active."
-          : "Your predicted heart disease risk is high. Please consult a healthcare provider for further evaluation."
+          ? "Your answers suggest some heart health risk factors that may be worth improving through lifestyle changes and regular check-ups."
+          : "Your answers suggest elevated heart health risk factors. It may help to follow up with a healthcare professional and focus on the areas highlighted below."
       : category === "Normal"
-        ? "Your predicted glucose level is within a healthy range!"
+        ? "Your answers suggest a healthy glucose pattern right now. Continuing your current habits can help maintain it."
         : category === "Prediabetic"
-          ? "You may be at risk for prediabetes. Watch your diet and activity level closely."
-          : "High diabetes risk detected. Consider consulting your doctor for tests and lifestyle adjustments.";
+          ? "Your answers suggest possible early glucose-related risk factors. Paying attention to food, activity, and weight management may help."
+          : "Your answers suggest elevated glucose-related risk factors. Consider following up with a healthcare professional and reviewing the action steps below.";
 
   const adviceList = generateHealthAdvice(inputs, result.type, category);
 
   const handleGeneratePlan = async () => {
+    if (loadingPlan) return;
+
     setLoadingPlan(true);
+
     try {
       const plan = await fetchCustomHealthPlan(inputs, result.type, category, {
         probability: result.probability,
@@ -375,18 +457,34 @@ const ResultPage: React.FC = () => {
       });
 
       setCustomPlan(plan);
-    } catch (err) {
-      console.error("AI Plan Error:", err);
-      setCustomPlan("There was an issue generating your AI plan. Please try again.");
+    } catch (err: any) {
+      const errorCode = err?.code || "";
+      const errorMessage = (err?.message || "").toLowerCase();
+
+      if (
+        errorCode === "resource-exhausted" ||
+        errorCode === "functions/resource-exhausted" ||
+        errorMessage.includes("daily ai plan limit")
+      ) {
+        setCustomPlan(
+          "You’ve reached today’s limit of 2 AI plans. You can still use prediction tools and view your results. AI health plan will be available again tomorrow."
+        );
+      } else {
+        console.error("Unexpected AI Plan Error:", err);
+        setCustomPlan(
+          "We couldn’t generate your plan right now. Please try again in a moment."
+        );
+      }
     } finally {
       setLoadingPlan(false);
     }
   };
 
+
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="danger">
+        <IonToolbar color={result.type === "heart" ? "danger" : "primary"}>
           <IonTitle slot="primary">{titles[result.type]}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => history.push("/")}>
@@ -400,7 +498,7 @@ const ResultPage: React.FC = () => {
         <IonCard className="ion-padding">
           <IonCardHeader>
             <IonCardTitle style={{ fontSize: "1.4rem", fontWeight: "bold" }}>
-              Predicted {titles[result.type]}
+              {titles[result.type]}
             </IonCardTitle>
           </IonCardHeader>
 
@@ -417,14 +515,14 @@ const ResultPage: React.FC = () => {
 
             {result.type === "heart" && (
               <>
-                <p style={{ fontSize: "1.2rem", marginBottom: "10px" }}>
-                  {percent}% probability
+                <p style={{ fontSize: "1.1rem", marginBottom: "10px" }}>
+                  Estimated pattern strength: {percent}%
                 </p>
                 <IonProgressBar
                   color={color}
                   value={probability}
                   style={{ height: "20px", borderRadius: "10px" }}
-                ></IonProgressBar>
+                />
               </>
             )}
 
@@ -484,39 +582,66 @@ const ResultPage: React.FC = () => {
                     fontSize: "0.9rem",
                     color: "gray",
                     marginTop: "4px",
+                    gap: "8px",
+                    flexWrap: "wrap",
                   }}
                 >
-                  <span>Normal: {((probs?.[0] ?? 0) * 100).toFixed(1)}%</span>
-                  <span>Prediabetic: {((probs?.[1] ?? 0) * 100).toFixed(1)}%</span>
-                  <span>Diabetic: {((probs?.[2] ?? 0) * 100).toFixed(1)}%</span>
+                  <span>Normal: {((probs[0] ?? 0) * 100).toFixed(1)}%</span>
+                  <span>Prediabetic: {((probs[1] ?? 0) * 100).toFixed(1)}%</span>
+                  <span>Diabetic: {((probs[2] ?? 0) * 100).toFixed(1)}%</span>
                 </div>
               </>
             )}
 
-            <p style={{ marginTop: "20px", fontSize: "1rem", lineHeight: 1.4 }}>
-              {message}
-            </p>
+            <div style={{ marginTop: "18px" }}>
+              <p
+                style={{
+                  fontSize: "1rem",
+                  lineHeight: 1.55,
+                  margin: "0 0 10px 0",
+                }}
+              >
+                {message}
+              </p>
+
+              <p
+                style={{
+                  fontSize: "0.84rem",
+                  color: "var(--ion-color-medium)",
+                  lineHeight: 1.4,
+                  margin: 0,
+                }}
+              >
+                For wellness guidance only — not medical advice.
+              </p>
+            </div>
           </IonCardContent>
         </IonCard>
 
-        {/*Personalized Factor Insights */}
         {userFactors.length > 0 && (
           <IonCard>
             <IonCardHeader>
-              <IonCardTitle>Key Factors Affecting Your Risk</IonCardTitle>
+              <IonCardTitle>Why your result looks this way</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               {userFactors.map((f, i) => (
-                <div key={i} style={{ marginBottom: "14px" }}>
+                <div
+                  key={i}
+                  style={{
+                    marginBottom: "18px",
+                    textAlign: "left",
+                    paddingBottom: "4px",
+                  }}
+                >
                   <strong>{FEATURE_NAME_MAP[f.feature] || f.feature}</strong>{" "}
-                  <span style={{ color: "#888" }}>
-                    ({f.importance.toFixed(1)}%)
-                  </span>
+                  <span style={{ color: "#888" }}>({f.importance.toFixed(1)}%)</span>
                   <p
                     style={{
-                      fontSize: "0.9em",
-                      marginTop: "4px",
-                      marginBottom: "4px",
+                      fontSize: "0.95rem",
+                      marginTop: "6px",
+                      marginBottom: "8px",
+                      lineHeight: 1.5,
+                      color: "#444",
                     }}
                   >
                     {f.message}
@@ -535,7 +660,7 @@ const ResultPage: React.FC = () => {
                         height: "100%",
                         background: "linear-gradient(90deg, #ff9d00, #ff3c00)",
                       }}
-                    ></div>
+                    />
                   </div>
                 </div>
               ))}
@@ -546,66 +671,87 @@ const ResultPage: React.FC = () => {
         {riskProjection.length > 0 && (
           <IonCard>
             <IonCardHeader>
-              <IonCardTitle>
-                Projected {result.type === "heart" ? "Heart" : "Diabetes"} Risk Over Time
-              </IonCardTitle>
+              <IonCardTitle>How your risk may change over time</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               {loadingProjection ? (
                 <IonText>Computing projection...</IonText>
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={riskProjection}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="year" />
-                    <YAxis
-                      domain={[
-                        Math.max(
-                          0,
-                          Math.min(...riskProjection.map((d) => d.risk)) - 5
-                        ),
-                        Math.min(
-                          100,
-                          Math.max(...riskProjection.map((d) => d.risk)) + 5
-                        ),
-                      ]}
-                      label={{
-                        value: "Risk (%)",
-                        angle: -90,
-                        position: "insideLeft",
-                      }}
-                      tickFormatter={(v) => v.toFixed(1)}
-                    />
+                <>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={riskProjection}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" />
+                      <YAxis
+                        domain={[
+                          Math.max(0, Math.min(...riskProjection.map((d) => d.risk)) - 5),
+                          Math.min(100, Math.max(...riskProjection.map((d) => d.risk)) + 5),
+                        ]}
+                        label={{
+                          value: "Risk (%)",
+                          angle: -90,
+                          position: "insideLeft",
+                        }}
+                        tickFormatter={(v) => v.toFixed(1)}
+                      />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="risk"
+                        stroke={
+                          result.type === "heart"
+                            ? "var(--ion-color-danger)"
+                            : "var(--ion-color-warning)"
+                        }
+                        strokeWidth={3}
+                        dot={{ r: 5 }}
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
 
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="risk"
-                      stroke={
-                        result.type === "heart"
-                          ? "var(--ion-color-danger)"
-                          : "var(--ion-color-warning)"
-                      }
-                      strokeWidth={3}
-                      dot={{ r: 5 }}
-                      activeDot={{ r: 8 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                  <IonText color="medium">
+                    <p
+                      style={{
+                        fontSize: "0.84rem",
+                        marginTop: "12px",
+                        marginBottom: 0,
+                        lineHeight: 1.45,
+                        textAlign: "left",
+                      }}
+                    >
+                      This estimate shows how your risk pattern may change over time if your
+                      current habits and health profile stay similar. It is a screening estimate,
+                      not a diagnosis.
+                    </p>
+                  </IonText>
+                </>
               )}
             </IonCardContent>
           </IonCard>
         )}
 
-
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Your Personalized Plan</IonCardTitle>
+            <IonCardTitle>What you can work on next</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <ul style={{ textAlign: "left", marginLeft: "10px" }}>
-              {adviceList.map((tip, i) => (
-                <li key={i} style={{ marginBottom: "8px" }}>
+            <ul
+              style={{
+                textAlign: "left",
+                paddingLeft: "1.2rem",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              {adviceList.slice(0, 3).map((tip, i) => (
+                <li
+                  key={i}
+                  style={{
+                    marginBottom: "10px",
+                    color: "#333",
+                  }}
+                >
                   {tip}
                 </li>
               ))}
@@ -613,14 +759,43 @@ const ResultPage: React.FC = () => {
           </IonCardContent>
         </IonCard>
 
-        <IonButton
-          expand="block"
-          color="medium"
-          onClick={handleGeneratePlan}
-          disabled={loadingPlan}
+        <div
+          style={{
+            marginTop: "18px",
+            marginBottom: "10px",
+            padding: "10px 4px 0 4px",
+          }}
         >
-          {loadingPlan ? "Generating AI Plan..." : "✨ Generate AI Health Plan"}
-        </IonButton>
+          <IonText color="medium">
+            <p
+              style={{
+                fontSize: "0.88rem",
+                margin: "0 0 6px 0",
+                lineHeight: 1.4,
+              }}
+            >
+              You can generate up to 2 AI plans per day.
+            </p>
+            <p
+              style={{
+                fontSize: "0.84rem",
+                margin: "0 0 12px 0",
+                lineHeight: 1.4,
+              }}
+            >
+              This plan is for wellness guidance only and not medical advice.
+            </p>
+          </IonText>
+
+          <IonButton
+            expand="block"
+            color="medium"
+            onClick={handleGeneratePlan}
+            disabled={loadingPlan}
+          >
+            {loadingPlan ? "Generating AI Plan..." : "✨ Generate AI Health Plan"}
+          </IonButton>
+        </div>
 
         {customPlan && (
           <>
@@ -628,63 +803,91 @@ const ResultPage: React.FC = () => {
               <IonCardHeader>
                 <IonCardTitle>AI-Generated Plan</IonCardTitle>
               </IonCardHeader>
-              <IonCardContent style={{ textAlign: "left", whiteSpace: "pre-line" }}>
-                {customPlan.slice(0, 600)}{customPlan.length > 600 ? "..." : ""}
+              <IonCardContent
+                style={{
+                  textAlign: "left",
+                  whiteSpace: "pre-line",
+                  lineHeight: 1.6,
+                  fontSize: "0.98rem",
+                  color: "#2f2f2f",
+                }}
+              >
+                {customPlan.slice(0, 600)}
+                {customPlan.length > 600 ? "..." : ""}
               </IonCardContent>
             </IonCard>
 
             {customPlan.length > 600 && (
-              <IonButton expand="block" color="medium" onClick={() => setShowModal(true)}>
-                📜 View Full AI Plan
+              <IonButton expand="block" color="medium" fill="outline" onClick={() => setShowModal(true)}>
+                View Full AI Plan
               </IonButton>
             )}
 
-            {/*Modal for Full Plan */}
             <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
               <IonHeader translucent>
                 <IonToolbar color="danger">
-                  <IonTitle slot="primary">Full AI Health Plan</IonTitle>
+                  <IonTitle>Full AI Health Plan</IonTitle>
                   <IonButtons slot="end">
                     <IonButton
                       onClick={() => setShowModal(false)}
                       style={{
-                        background: "rgba(255, 255, 255, 0.2)",
+                        background: "rgba(255, 255, 255, 0.18)",
                         borderRadius: "50%",
                         padding: "4px",
+                        minWidth: "36px",
+                        minHeight: "36px",
                       }}
                     >
                       <IonIcon icon={closeOutline} color="light" slot="icon-only" />
                     </IonButton>
                   </IonButtons>
-
-
-
                 </IonToolbar>
               </IonHeader>
 
-
               <IonContent className="ion-padding">
-                <IonText style={{ whiteSpace: "pre-line", textAlign: "left" }}>
+                <div
+                  style={{
+                    whiteSpace: "pre-line",
+                    textAlign: "left",
+                    lineHeight: 1.65,
+                    fontSize: "1rem",
+                    color: "#2f2f2f",
+                  }}
+                >
                   {customPlan}
-                </IonText>
-                <IonText color="medium" style={{ display: "block", marginTop: "1.5rem", fontSize: "0.85rem" }}>
-                  This app uses AI models trained on public health datasets (e.g., NHANES, BRFSS)
-                  to estimate potential health risks and provide lifestyle suggestions.
-                  It is <strong>not a substitute for professional medical advice,
-                    diagnosis, or treatment.</strong> Always consult your doctor or a qualified
-                  healthcare provider with any questions you may have regarding a medical condition.
-                </IonText>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: "20px",
+                    paddingTop: "12px",
+                    borderTop: "1px solid #e5e5e5",
+                  }}
+                >
+                  <IonText color="medium">
+                    <p
+                      style={{
+                        fontSize: "0.84rem",
+                        lineHeight: 1.45,
+                        margin: 0,
+                      }}
+                    >
+                      This plan provides general wellness guidance and is not medical advice.
+                      For health concerns, consult a healthcare professional.
+                    </p>
+                  </IonText>
+                </div>
               </IonContent>
             </IonModal>
           </>
         )}
-
       </IonContent>
-      <IonFooter translucent={true}>
+
+      <IonFooter translucent>
         <IonToolbar>
           <IonButton
             expand="block"
-            color="danger"
+            color={result.type === "heart" ? "danger" : "primary"}
             onClick={() => {
               setCustomPlan("");
               history.push(result.type === "heart" ? "/heart" : "/gluco");

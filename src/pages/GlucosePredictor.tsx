@@ -21,10 +21,25 @@ import {
   IonIcon,
   IonAlert,
   IonFooter,
+  IonText,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { runGlucoseModel } from "../onnxPredictor";
 import { homeOutline, refreshOutline } from "ionicons/icons";
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: "1.05rem",
+  fontWeight: 700,
+  marginTop: "18px",
+  marginBottom: "8px",
+};
+
+const helperTextStyle: React.CSSProperties = {
+  fontSize: "0.84rem",
+  marginTop: "4px",
+  marginBottom: "10px",
+  lineHeight: 1.35,
+};
 
 const GlucosePredictor: React.FC = () => {
   const history = useHistory();
@@ -39,21 +54,24 @@ const GlucosePredictor: React.FC = () => {
   const [bmi, setBmi] = useState<number>(savedData.BMI || 0);
   const [gender, setGender] = useState<string>(savedData.gender || "male");
   const [htn, setHtn] = useState<boolean>(savedData.HTN_FLAG === 1);
-  const [smoking, setSmoking] = useState<number>(savedData.SMOKING_IDX || 0);
+  const [smoking, setSmoking] = useState<number>(
+    [0, 1, 2, 3].includes(savedData.SMOKING_IDX) ? savedData.SMOKING_IDX : 0
+  );
   const [glucose, setGlucose] = useState<number>(savedData.GLU || 0);
   const [active, setActive] = useState<boolean>(savedData.PA_ANY === 1);
 
   const [showAlert, setShowAlert] = useState(false);
 
-  //Auto BMI
   useEffect(() => {
     const hMeters = ((heightFt * 12 + heightIn) * 2.54) / 100;
     const wKg = unit === "lb" ? weight * 0.453592 : weight;
-    if (hMeters > 0)
+    if (hMeters > 0) {
       setBmi(parseFloat((wKg / (hMeters * hMeters)).toFixed(1)));
+    } else {
+      setBmi(0);
+    }
   }, [heightFt, heightIn, weight, unit]);
 
-  //Save to localStorage
   useEffect(() => {
     const data = {
       AGE: age,
@@ -68,6 +86,7 @@ const GlucosePredictor: React.FC = () => {
       GLU: glucose,
       PA_ANY: active ? 1 : 0,
     };
+
     localStorage.setItem("glucoFormData", JSON.stringify(data));
   }, [
     age,
@@ -84,6 +103,8 @@ const GlucosePredictor: React.FC = () => {
   ]);
 
   const handleClear = () => {
+    if (!window.confirm("Clear all entered information?")) return;
+
     localStorage.removeItem("glucoFormData");
     localStorage.removeItem("glucoRiskData");
 
@@ -106,12 +127,10 @@ const GlucosePredictor: React.FC = () => {
     setActive(false);
   };
 
-  //Predict
   const handlePredict = async () => {
     const safe = (v: number | undefined) =>
       isNaN(Number(v)) ? 0 : Number(v);
 
-    //Mandatory field validation
     if (
       !age ||
       !heightFt ||
@@ -120,11 +139,10 @@ const GlucosePredictor: React.FC = () => {
       gender === "" ||
       smoking === undefined
     ) {
-      alert("Please fill all required fields before predicting.");
+      alert("Please fill all required fields before continuing.");
       return;
     }
 
-    //Default fasting glucose to 95 mg/dL if blank, with disclaimer
     let glucoseVal = glucose;
     if (!glucoseVal || glucoseVal <= 0) {
       glucoseVal = 95;
@@ -145,11 +163,10 @@ const GlucosePredictor: React.FC = () => {
       PA_ANY,
     };
 
-    console.log("Model Input:", inputMap);
+    //console.log("Glucose model input:", inputMap);
 
     try {
       const result = await runGlucoseModel(Object.values(inputMap));
-      console.log("Model Output:", result);
 
       const riskData = {
         inputs: inputMap,
@@ -180,7 +197,7 @@ const GlucosePredictor: React.FC = () => {
             </IonButton>
           </IonButtons>
 
-          <IonTitle slot="primary">GlucoPredict</IonTitle>
+          <IonTitle slot="primary">Glucose Check</IonTitle>
 
           <IonButtons slot="end">
             <IonButton onClick={() => history.push("/")}>
@@ -191,7 +208,38 @@ const GlucosePredictor: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <h2 className="ion-text-center">Enter Your Information</h2>
+        <h2 className="ion-text-center" style={{ marginBottom: "8px" }}>
+          Tell us about your health and habits
+        </h2>
+
+        <IonText color="medium">
+          <p
+            style={{
+              textAlign: "center",
+              marginBottom: "18px",
+              lineHeight: 1.45,
+              fontSize: "0.95rem",
+            }}
+          >
+            Answer a few questions about your health and habits to explore your
+            glucose health risk pattern.
+          </p>
+        </IonText>
+
+        <IonText color="medium">
+          <p
+            style={{
+              fontSize: "0.82rem",
+              marginTop: "0",
+              marginBottom: "8px",
+              lineHeight: 1.2,
+            }}
+          >
+            * Required fields
+          </p>
+        </IonText>
+
+        <div style={sectionTitleStyle}>Basic Information</div>
 
         <IonList>
           <IonItem>
@@ -221,6 +269,10 @@ const GlucosePredictor: React.FC = () => {
             />
           </IonItem>
 
+          <IonText color="medium">
+            <p style={helperTextStyle}>Example: 5 ft 8 in</p>
+          </IonText>
+
           <IonItem>
             <IonLabel position="stacked">Weight ({unit}) *</IonLabel>
             <IonInput
@@ -240,7 +292,7 @@ const GlucosePredictor: React.FC = () => {
         </IonSegment>
 
         <IonItem>
-          <IonLabel>BMI (auto-calculated)</IonLabel>
+          <IonLabel>Your BMI (calculated automatically)</IonLabel>
           <IonLabel>{bmi || "--"}</IonLabel>
         </IonItem>
 
@@ -252,21 +304,23 @@ const GlucosePredictor: React.FC = () => {
           <IonSegmentButton value="female">Female</IonSegmentButton>
         </IonSegment>
 
-        <IonItem>
-          <IonLabel>Hypertension *</IonLabel>
-          <IonSelect
-            value={htn ? "yes" : "no"}
-            onIonChange={(e) => setHtn(e.detail.value === "yes")}
-          >
-            <IonSelectOption value="yes">Yes</IonSelectOption>
-            <IonSelectOption value="no">No</IonSelectOption>
-          </IonSelect>
-        </IonItem>
+        <div style={sectionTitleStyle}>Health History and Habits</div>
 
         <IonList>
-          <IonItem lines="full">
+          <IonItem>
+            <IonLabel position="stacked">Do you have high blood pressure? *</IonLabel>
+            <IonSelect
+              value={htn ? "yes" : "no"}
+              onIonChange={(e) => setHtn(e.detail.value === "yes")}
+            >
+              <IonSelectOption value="yes">Yes</IonSelectOption>
+              <IonSelectOption value="no">No</IonSelectOption>
+            </IonSelect>
+          </IonItem>
+
+          <IonItem lines="none">
             <IonLabel>
-              <h3>Smoking Level *</h3>
+              <h3 style={{ marginBottom: "6px" }}>Smoking Status *</h3>
             </IonLabel>
           </IonItem>
 
@@ -275,61 +329,62 @@ const GlucosePredictor: React.FC = () => {
             onIonChange={(e) => setSmoking(Number(e.detail.value))}
           >
             <IonItem>
-              <IonLabel>0 - Non-Smoker 🚭</IonLabel>
+              <IonLabel>I do not smoke</IonLabel>
               <IonRadio slot="start" value={0} />
             </IonItem>
             <IonItem>
-              <IonLabel>1 - Occasional Smoker ✍️</IonLabel>
+              <IonLabel>I smoke occasionally</IonLabel>
               <IonRadio slot="start" value={1} />
             </IonItem>
             <IonItem>
-              <IonLabel>2 - Regular Smoker 💨</IonLabel>
+              <IonLabel>I smoke regularly</IonLabel>
               <IonRadio slot="start" value={2} />
             </IonItem>
             <IonItem>
-              <IonLabel>3 - Heavy Smoker 🔥</IonLabel>
+              <IonLabel>I smoke heavily</IonLabel>
               <IonRadio slot="start" value={3} />
             </IonItem>
           </IonRadioGroup>
+
+          <IonItem>
+            <IonLabel position="stacked">
+              Fasting blood sugar (mg/dL) — optional
+            </IonLabel>
+            <IonInput
+              type="number"
+              value={glucose}
+              onIonChange={(e) => setGlucose(Number(e.detail.value))}
+            />
+          </IonItem>
+
+          <IonText color="medium">
+            <p style={helperTextStyle}>
+              Leave this blank if you do not know your fasting blood sugar value.
+            </p>
+          </IonText>
+
+          <IonItem>
+            <IonLabel>Are you physically active? *</IonLabel>
+            <IonToggle
+              checked={active}
+              onIonChange={(e) => setActive(e.detail.checked)}
+            />
+          </IonItem>
         </IonList>
 
-        <IonItem>
-          <IonLabel position="stacked">
-            Fasting Glucose (mg/dL) — optional
-          </IonLabel>
-          <IonInput
-            type="number"
-            value={glucose}
-            onIonChange={(e) => setGlucose(Number(e.detail.value))}
-          />
-        </IonItem>
-
-        <IonItem>
-          <IonLabel>Physically Active *</IonLabel>
-          <IonToggle
-            checked={active}
-            onIonChange={(e) => setActive(e.detail.checked)}
-          />
-        </IonItem>
-
-        <div className="ion-text-center ion-padding-top">
-
-        </div>
-
-        {/* Disclaimer alert */}
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}
-          header="Default Glucose Used"
-          message="You did not enter a fasting glucose value. A typical average of 95 mg/dL was used for estimation. Actual results may vary."
+          header="Default Blood Sugar Used"
+          message="You did not enter a fasting blood sugar value. A typical value of 95 mg/dL was used for estimation, so actual results may vary."
           buttons={["OK"]}
         />
       </IonContent>
 
-      <IonFooter translucent={true}>
+      <IonFooter translucent>
         <IonToolbar>
-          <IonButton expand="block" onClick={handlePredict}>
-            Predict
+          <IonButton expand="block" color="primary" onClick={handlePredict}>
+            Check My Glucose Health
           </IonButton>
         </IonToolbar>
       </IonFooter>

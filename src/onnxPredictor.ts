@@ -39,7 +39,7 @@ export interface HeartResult {
 
 
 export async function runHeartModel(inputs: Record<string, number>): Promise<HeartResult> {
-  console.log("🧩 Model Input: ", inputs);
+  //console.log("🧩 Model Input: ", inputs);
 
   // Load ONNX model
   const session = await ort.InferenceSession.create("./brfss_heart.onnx");
@@ -51,11 +51,11 @@ export async function runHeartModel(inputs: Record<string, number>): Promise<Hea
     feeds[key] = new ort.Tensor("float32", Float32Array.from([value]), [1, 1]);
   }
 
-  console.log("🚀 ONNX Feed Keys:", Object.keys(feeds));
+  //console.log("🚀 ONNX Feed Keys:", Object.keys(feeds));
 
   // Run inference
   const results = await session.run(feeds);
-  console.log("Model Output:", results);
+  //console.log("Model Output:", results);
 
   //unwrap ONNX
   const probsTensor = results["probabilities"];

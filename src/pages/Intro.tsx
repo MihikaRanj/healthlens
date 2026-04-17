@@ -9,6 +9,8 @@ import {
   IonText,
   IonButtons,
   IonIcon,
+  IonCard,
+  IonCardContent,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { helpCircleOutline } from "ionicons/icons";
@@ -20,9 +22,8 @@ const Intro: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle slot="primary">HealthLens</IonTitle>
+          <IonTitle>HealthLens</IonTitle>
 
-          {/*Help Button */}
           <IonButtons slot="end">
             <IonButton onClick={() => history.push("/help")}>
               <IonIcon icon={helpCircleOutline} slot="icon-only" />
@@ -32,18 +33,55 @@ const Intro: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding ion-text-center">
-        <h1 style={{ fontWeight: "bold" }}>Welcome to HealthLens</h1>
-        <p>
-          A smart tool that predicts your glucose health and heart health based on your lifestyle
-          and vitals. Get insights instantly!
-        </p>
+        <h1 style={{ fontWeight: "bold", marginBottom: "10px" }}>
+          Understand Your Health Risk Early
+        </h1>
 
-        <IonButton expand="block" color="primary" onClick={() => history.push("/gluco")}>
-          Glucose Predictor
+        <IonText>
+          <p
+            style={{
+              maxWidth: "500px",
+              margin: "0 auto 14px auto",
+              lineHeight: "1.5",
+            }}
+          >
+            HealthLens helps you explore possible early risk patterns for
+            <strong> heart disease and diabetes</strong> based on your health
+            habits, and gives personalized insights to support healthier choices.
+          </p>
+        </IonText>
+
+        <IonCard>
+          <IonCardContent style={{ textAlign: "left", paddingTop: "10px", paddingBottom: "10px" }}>
+            <ul style={{ paddingLeft: "1.2rem", lineHeight: "1.55", margin: 0 }}>
+              <li>Personalized risk insights based on your habits</li>
+              <li>Clear explanation of key contributing factors</li>
+              <li>Projected risk trends over time</li>
+              <li>Simple, actionable health recommendations</li>
+            </ul>
+          </IonCardContent>
+        </IonCard>
+
+        <IonText color="medium">
+          <p style={{ marginTop: "6px", marginBottom: "12px", fontSize: "0.92rem" }}>
+            Choose a health check to get started.
+          </p>
+        </IonText>
+
+        <IonButton
+          expand="block"
+          color="primary"
+          onClick={() => history.push("/gluco")}
+        >
+          Start Glucose Check
         </IonButton>
 
-        <IonButton expand="block" color="danger" onClick={() => history.push("/heart")}>
-          Heart Risk Predictor
+        <IonButton
+          expand="block"
+          color="danger"
+          onClick={() => history.push("/heart")}
+        >
+          Start Heart Check
         </IonButton>
 
         <IonButton
@@ -63,25 +101,22 @@ const Intro: React.FC = () => {
             }
           }}
         >
-          💬 Chat with Health Coach
+          💬 Ask Health Coach
         </IonButton>
 
-        {/*Disclaimer*/}
-        <IonText
-          color="medium"
-          style={{
-            position: "absolute",
-            bottom: "12px",
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            fontSize: "0.75rem",
-            opacity: 0.7,
-            padding: "0 20px",
-            lineHeight: "1.3",
-          }}
-        >
-          ⚠️ This app uses AI to generate insights and should not replace medical consultation.
+        <IonText color="medium">
+          <p
+            style={{
+              marginTop: "16px",
+              textAlign: "center",
+              fontSize: "0.75rem",
+              opacity: 0.75,
+              padding: "0 10px",
+              lineHeight: "1.3",
+            }}
+          >
+            ⚠️ HealthLens provides educational insights only and does not replace medical advice.
+          </p>
         </IonText>
       </IonContent>
     </IonPage>
