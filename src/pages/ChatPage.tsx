@@ -68,6 +68,26 @@ const ChatPage: React.FC = () => {
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const handleShareChat = async () => {
+        const transcript = messages
+            .map((m) => `${m.sender === "user" ? "You" : "Coach"}: ${m.text}`)
+            .join("\n\n");
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: "HealthLens Coach Chat",
+                    text: transcript,
+                });
+            } else {
+                await navigator.clipboard.writeText(transcript);
+                alert("Chat copied to clipboard.");
+            }
+        } catch (err) {
+            console.error("Share chat failed:", err);
+        }
+    };
+
     useEffect(() => {
         const getCategoryFromProbs = (probs?: number[]) => {
             if (!probs || probs.length !== 3) return "Unknown";
@@ -245,7 +265,7 @@ const ChatPage: React.FC = () => {
                                 lineHeight: 1.4,
                             }}
                         >
-                            You can send up to 8 chat messages per day.
+                            You can send up to 8 coach messages each day. If you reach the limit, you can still use the health checks and come back tomorrow.
                         </p>
                     </IonText>
                 </div>
@@ -389,15 +409,23 @@ const ChatPage: React.FC = () => {
 
                     <IonButton
                         expand="block"
-                        fill="clear"
+                        fill="outline"
+                        size="small"
+                        onClick={handleShareChat}
+                        style={{ marginTop: "8px" }}
+                    >
+                        Share or Copy Chat
+                    </IonButton>
+                    <IonButton
+                        expand="block"
+                        fill="outline"
                         size="small"
                         onClick={() => {
                             clearChatHistory();
                             window.location.reload();
                         }}
                         style={{
-                            marginTop: "8px",
-                            color: "var(--ion-color-medium)",
+                            marginTop: "8px"
                         }}
                     >
                         Start New Chat

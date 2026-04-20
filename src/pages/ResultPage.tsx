@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   IonPage,
   IonHeader,
@@ -49,8 +49,14 @@ interface ModelResult {
 const ResultPage: React.FC = () => {
   const history = useHistory();
   const location = useLocation<{ result: ModelResult; inputs: Record<string, number> }>();
-  const result = location.state?.result;
-  const inputs = location.state?.inputs || {};
+
+  const state = location.state;
+
+  const result = useMemo(() => state?.result, [state?.result]);
+  const inputs = useMemo<Record<string, number>>(
+    () => state?.inputs ?? {},
+    [state?.inputs]
+  );
 
   const [customPlan, setCustomPlan] = useState<string>("");
   const [loadingPlan, setLoadingPlan] = useState<boolean>(false);
@@ -64,6 +70,7 @@ const ResultPage: React.FC = () => {
     { year: string; risk: number }[]
   >([]);
   const [loadingProjection, setLoadingProjection] = useState(false);
+  const planRef = useRef<HTMLDivElement | null>(null);
 
   const FEATURE_NAME_MAP: Record<string, string> = {
     AGE: "Age",
@@ -97,6 +104,26 @@ const ResultPage: React.FC = () => {
     "Heavy Drinking (1=Yes)": "Heavy Drinking",
     "Activity Type Code (1–Walking, 2–Running, 3–Cycling, etc.)":
       "Primary Exercise Type",
+  };
+
+  const handleSharePlan = async () => {
+    if (!customPlan) return;
+
+    const shareText = `My HealthLens AI Plan\n\n${customPlan}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "HealthLens AI Plan",
+          text: shareText,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        alert("Plan copied to clipboard.");
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+    }
   };
 
   useEffect(() => {
@@ -292,6 +319,11 @@ const ResultPage: React.FC = () => {
           }
         }
 
+        if (inputs.AGE >= 85 && message) {
+          message +=
+            " At more advanced ages, screening estimates like this may be less precise, so interpret this result with additional caution.";
+        }
+
         return {
           feature: factor.feature,
           importance: factor.importance_percent,
@@ -307,6 +339,14 @@ const ResultPage: React.FC = () => {
   useEffect(() => {
     setCustomPlan("");
   }, [result, inputs]);
+
+  useEffect(() => {
+    if (customPlan) {
+      setTimeout(() => {
+        planRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+  }, [customPlan]);
 
   useEffect(() => {
     if (result && inputs && Object.keys(inputs).length > 0) {
@@ -333,7 +373,7 @@ const ResultPage: React.FC = () => {
 
       try {
         const currentAge = inputs.AGE;
-        const ages = [currentAge, currentAge + 5, currentAge + 10];
+        const ages = [currentAge, Math.min(currentAge + 5, 95), Math.min(currentAge + 10, 95)];
         const dataPoints: { year: string; risk: number }[] = [];
 
         for (const age of ages) {
@@ -774,7 +814,7 @@ const ResultPage: React.FC = () => {
                 lineHeight: 1.4,
               }}
             >
-              You can generate up to 2 AI plans per day.
+              You can generate up to 2 AI health plans each day. If you reach the limit, you can still view your results and try again tomorrow.
             </p>
             <p
               style={{
@@ -798,7 +838,7 @@ const ResultPage: React.FC = () => {
         </div>
 
         {customPlan && (
-          <>
+          <div ref={planRef}>
             <IonCard>
               <IonCardHeader>
                 <IonCardTitle>AI-Generated Plan</IonCardTitle>
@@ -816,6 +856,9 @@ const ResultPage: React.FC = () => {
                 {customPlan.length > 600 ? "..." : ""}
               </IonCardContent>
             </IonCard>
+            <IonButton expand="block" fill="outline" onClick={handleSharePlan}>
+              Share or Copy Plan
+            </IonButton>
 
             {customPlan.length > 600 && (
               <IonButton expand="block" color="medium" fill="outline" onClick={() => setShowModal(true)}>
@@ -879,7 +922,7 @@ const ResultPage: React.FC = () => {
                 </div>
               </IonContent>
             </IonModal>
-          </>
+          </div>
         )}
       </IonContent>
 

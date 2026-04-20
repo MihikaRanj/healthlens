@@ -8,8 +8,6 @@ import {
   IonItem,
   IonLabel,
   IonInput,
-  IonSegment,
-  IonSegmentButton,
   IonButton,
   IonToggle,
   IonSelect,
@@ -22,6 +20,7 @@ import {
   IonAlert,
   IonFooter,
   IonText,
+
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { runGlucoseModel } from "../onnxPredictor";
@@ -57,7 +56,9 @@ const GlucosePredictor: React.FC = () => {
   const [smoking, setSmoking] = useState<number>(
     [0, 1, 2, 3].includes(savedData.SMOKING_IDX) ? savedData.SMOKING_IDX : 0
   );
-  const [glucose, setGlucose] = useState<number>(savedData.GLU || 0);
+  const [glucose, setGlucose] = useState<string>(
+    savedData.GLU ? String(savedData.GLU) : ""
+  );
   const [active, setActive] = useState<boolean>(savedData.PA_ANY === 1);
 
   const [showAlert, setShowAlert] = useState(false);
@@ -83,7 +84,7 @@ const GlucosePredictor: React.FC = () => {
       gender,
       HTN_FLAG: htn ? 1 : 0,
       SMOKING_IDX: smoking,
-      GLU: glucose,
+      GLU: glucose === "" ? "" : Number(glucose),
       PA_ANY: active ? 1 : 0,
     };
 
@@ -123,7 +124,7 @@ const GlucosePredictor: React.FC = () => {
     setGender("male");
     setHtn(false);
     setSmoking(0);
-    setGlucose(0);
+    setGlucose("");
     setActive(false);
   };
 
@@ -143,8 +144,8 @@ const GlucosePredictor: React.FC = () => {
       return;
     }
 
-    let glucoseVal = glucose;
-    if (!glucoseVal || glucoseVal <= 0) {
+    let glucoseVal = Number(glucose);
+    if (!glucose || isNaN(glucoseVal) || glucoseVal <= 0) {
       glucoseVal = 95;
       setShowAlert(true);
     }
@@ -251,58 +252,184 @@ const GlucosePredictor: React.FC = () => {
             />
           </IonItem>
 
+          <div style={{ display: "flex", gap: "10px" }}>
+            <IonItem lines="none" style={{ flex: 1 }}>
+              <IonLabel position="stacked">Height (ft) *</IonLabel>
+              <IonInput
+                type="number"
+                value={heightFt}
+                onIonChange={(e) => setHeightFt(Number(e.detail.value))}
+                style={{ borderBottom: "1px solid #d9d9d9" }}
+              />
+            </IonItem>
+
+            <IonItem lines="none" style={{ flex: 1 }}>
+              <IonLabel position="stacked">Height (in)</IonLabel>
+              <IonInput
+                type="number"
+                value={heightIn}
+                onIonChange={(e) => setHeightIn(Number(e.detail.value))}
+                style={{ borderBottom: "1px solid #d9d9d9" }}
+              />
+            </IonItem>
+          </div>
+
+          <div
+            style={{
+              padding: "0 16px 8px 16px",
+
+              borderBottom: "1px solid #d9d9d9",
+              marginTop: "2px",
+            }}
+          >
+            <IonText color="medium">
+              <p
+                style={{
+                  fontSize: "0.82rem",
+                  margin: 0,
+                  lineHeight: 1.3,
+                }}
+              >
+                Example: 5 ft 8 in
+              </p>
+            </IonText>
+          </div>
+
           <IonItem>
-            <IonLabel position="stacked">Height (ft) *</IonLabel>
-            <IonInput
-              type="number"
-              value={heightFt}
-              onIonChange={(e) => setHeightFt(Number(e.detail.value))}
-            />
+            <IonLabel position="stacked" style={{ whiteSpace: "nowrap" }}>
+              Weight *
+            </IonLabel>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                width: "100%",
+                marginTop: "6px",
+              }}
+            >
+              <IonInput
+                type="number"
+                value={weight}
+                placeholder="Enter weight"
+                onIonChange={(e) => setWeight(Number(e.detail.value))}
+                style={{
+                  width: "90px",
+                  minWidth: "90px",
+                  flex: "0 0 90px",
+                }}
+              />
+
+              <IonRadioGroup
+                value={unit}
+                onIonChange={(e) => setUnit(String(e.detail.value) as "kg" | "lb")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  flexShrink: 0,
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "1rem",
+                    color: "var(--ion-color-dark)",
+                  }}
+                >
+                  <IonRadio value="kg" mode="md" />
+                  <span>kg</span>
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "1rem",
+                    color: "var(--ion-color-dark)",
+                  }}
+                >
+                  <IonRadio value="lb" mode="md" />
+                  <span>lb</span>
+                </label>
+              </IonRadioGroup>
+            </div>
           </IonItem>
 
           <IonItem>
-            <IonLabel position="stacked">Height (in)</IonLabel>
-            <IonInput
-              type="number"
-              value={heightIn}
-              onIonChange={(e) => setHeightIn(Number(e.detail.value))}
-            />
+            <IonLabel>
+              <div style={{ fontSize: "1rem", lineHeight: 1.3 }}>
+                Your BMI
+              </div>
+              <div
+                style={{
+                  fontSize: "0.82rem",
+                  color: "var(--ion-color-medium)",
+                  marginTop: "2px",
+                }}
+              >
+                Calculated automatically
+              </div>
+            </IonLabel>
+
+            <IonLabel
+              slot="end"
+              style={{
+                fontSize: "1.05rem",
+                fontWeight: 500,
+                textAlign: "right",
+              }}
+            >
+              {bmi || "--"}
+            </IonLabel>
           </IonItem>
 
-          <IonText color="medium">
-            <p style={helperTextStyle}>Example: 5 ft 8 in</p>
-          </IonText>
+          <IonItem lines="none">
+            <IonLabel position="stacked">Gender *</IonLabel>
 
-          <IonItem>
-            <IonLabel position="stacked">Weight ({unit}) *</IonLabel>
-            <IonInput
-              type="number"
-              value={weight}
-              onIonChange={(e) => setWeight(Number(e.detail.value))}
-            />
+            <IonRadioGroup
+              value={gender}
+              onIonChange={(e) => setGender(String(e.detail.value))}
+              style={{
+                display: "flex",
+                gap: "20px",
+                marginTop: "8px",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "1rem",
+                  color: "var(--ion-color-dark)",
+                }}
+              >
+                <IonRadio value="male" mode="md" />
+                <span>Male</span>
+              </label>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "1rem",
+                  color: "var(--ion-color-dark)",
+                }}
+              >
+                <IonRadio value="female" mode="md" />
+                <span>Female</span>
+              </label>
+            </IonRadioGroup>
           </IonItem>
+
         </IonList>
-
-        <IonSegment
-          value={unit}
-          onIonChange={(e) => setUnit(String(e.detail.value) as "kg" | "lb")}
-        >
-          <IonSegmentButton value="kg">kg</IonSegmentButton>
-          <IonSegmentButton value="lb">lb</IonSegmentButton>
-        </IonSegment>
-
-        <IonItem>
-          <IonLabel>Your BMI (calculated automatically)</IonLabel>
-          <IonLabel>{bmi || "--"}</IonLabel>
-        </IonItem>
-
-        <IonSegment
-          value={gender}
-          onIonChange={(e) => setGender(String(e.detail.value))}
-        >
-          <IonSegmentButton value="male">Male</IonSegmentButton>
-          <IonSegmentButton value="female">Female</IonSegmentButton>
-        </IonSegment>
 
         <div style={sectionTitleStyle}>Health History and Habits</div>
 
@@ -353,7 +480,8 @@ const GlucosePredictor: React.FC = () => {
             <IonInput
               type="number"
               value={glucose}
-              onIonChange={(e) => setGlucose(Number(e.detail.value))}
+              placeholder="Optional"
+              onIonChange={(e) => setGlucose(e.detail.value ?? "")}
             />
           </IonItem>
 

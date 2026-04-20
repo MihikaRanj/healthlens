@@ -9,8 +9,6 @@ import {
   IonText,
   IonButtons,
   IonIcon,
-  IonCard,
-  IonCardContent,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { helpCircleOutline } from "ionicons/icons";
@@ -46,21 +44,11 @@ const Intro: React.FC = () => {
             }}
           >
             HealthLens helps you explore possible early risk patterns for
-            <strong> heart disease and diabetes</strong> based on your health
-            habits, and gives personalized insights to support healthier choices.
+            <strong> heart disease and diabetes</strong> using your health habits,
+            and gives simple, personalized insights to support healthier choices
+            earlier.
           </p>
         </IonText>
-
-        <IonCard>
-          <IonCardContent style={{ textAlign: "left", paddingTop: "10px", paddingBottom: "10px" }}>
-            <ul style={{ paddingLeft: "1.2rem", lineHeight: "1.55", margin: 0 }}>
-              <li>Personalized risk insights based on your habits</li>
-              <li>Clear explanation of key contributing factors</li>
-              <li>Projected risk trends over time</li>
-              <li>Simple, actionable health recommendations</li>
-            </ul>
-          </IonCardContent>
-        </IonCard>
 
         <IonText color="medium">
           <p style={{ marginTop: "6px", marginBottom: "12px", fontSize: "0.92rem" }}>
@@ -68,41 +56,61 @@ const Intro: React.FC = () => {
           </p>
         </IonText>
 
-        <IonButton
-          expand="block"
-          color="primary"
-          onClick={() => history.push("/gluco")}
-        >
-          Start Glucose Check
-        </IonButton>
-
-        <IonButton
-          expand="block"
-          color="danger"
-          onClick={() => history.push("/heart")}
-        >
-          Start Heart Check
-        </IonButton>
-
-        <IonButton
-          expand="block"
-          color="secondary"
-          onClick={() => {
-            const heartData = localStorage.getItem("heartRiskData");
-            const glucoData = localStorage.getItem("glucoRiskData");
-
-            if (heartData || glucoData) {
-              history.push("/chat", {
-                heartData: heartData ? JSON.parse(heartData) : null,
-                glucoData: glucoData ? JSON.parse(glucoData) : null,
-              });
-            } else {
-              history.push("/chat");
-            }
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "12px",
+            maxWidth: "560px",
+            margin: "0 auto",
           }}
         >
-          💬 Ask Health Coach
-        </IonButton>
+          <IonButton
+            expand="block"
+            color="primary"
+            style={{ minHeight: "110px", whiteSpace: "normal" }}
+            onClick={() => history.push("/gluco")}
+          >
+            Start Glucose Check
+          </IonButton>
+
+          <IonButton
+            expand="block"
+            color="danger"
+            style={{ minHeight: "110px", whiteSpace: "normal" }}
+            onClick={() => history.push("/heart")}
+          >
+            Start Heart Check
+          </IonButton>
+
+          <IonButton
+            expand="block"
+            color="secondary"
+            style={{
+              minHeight: "120px",
+              gridColumn: "1 / -1",
+              whiteSpace: "normal",
+              display: "flex",
+              flexDirection: "column",
+            }}
+            onClick={() => {
+              const heartData = localStorage.getItem("heartRiskData");
+              const glucoData = localStorage.getItem("glucoRiskData");
+
+              if (heartData || glucoData) {
+                history.push("/chat", {
+                  heartData: heartData ? JSON.parse(heartData) : null,
+                  glucoData: glucoData ? JSON.parse(glucoData) : null,
+                });
+              } else {
+                history.push("/chat");
+              }
+            }}
+          >
+            <div style={{ fontSize: "2rem", marginBottom: "6px" }}>🧑‍⚕️</div>
+            <div>Ask Health Coach</div>
+          </IonButton>
+        </div>
 
         <IonText color="medium">
           <p
