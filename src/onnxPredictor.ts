@@ -14,14 +14,12 @@ export async function runGlucoseModel(inputData: number[]) {
 
   const results = await session.run(feeds);
 
-  //output keys
   const label = results["label"];
   const probs = results["probabilities"];
 
   const labelArray = label instanceof ort.Tensor ? Array.from(label.data as any[]) : [];
   const probArray = probs instanceof ort.Tensor ? Array.from(probs.data as any[]) : [];
 
-  // Convert any BigInts to numbers before returning
   const clean = (v: any) => (typeof v === "bigint" ? Number(v) : v);
   return {
     label: clean(labelArray[0]),
@@ -39,25 +37,15 @@ export interface HeartResult {
 
 
 export async function runHeartModel(inputs: Record<string, number>): Promise<HeartResult> {
-  //console.log("🧩 Model Input: ", inputs);
-
-  // Load ONNX model
   const session = await ort.InferenceSession.create("./brfss_heart.onnx");
 
-  //Build column-wise input feed (each key = ONNX input)
   const feeds: Record<string, ort.Tensor> = {};
   for (const key of FEATURE_ORDER) {
     const value = isNaN(Number(inputs[key])) ? 0 : Number(inputs[key]);
     feeds[key] = new ort.Tensor("float32", Float32Array.from([value]), [1, 1]);
   }
 
-  //console.log("🚀 ONNX Feed Keys:", Object.keys(feeds));
-
-  // Run inference
   const results = await session.run(feeds);
-  //console.log("Model Output:", results);
-
-  //unwrap ONNX
   const probsTensor = results["probabilities"];
   const labelTensor = results["label"];
 
@@ -72,7 +60,6 @@ export async function runHeartModel(inputs: Record<string, number>): Promise<Hea
 
   const probability = Number(probs[1] ?? probs[0] ?? 0);
 
-  //Convert to readable risk level
   let category = "Low";
   if (probability >= 0.3 && probability < 0.6) category = "Moderate";
   else if (probability >= 0.6) category = "High";
