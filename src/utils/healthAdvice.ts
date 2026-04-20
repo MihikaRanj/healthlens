@@ -19,7 +19,6 @@ export function generateHealthAdvice(
     if (inputs.CHOLESTEROL_FLAG === 1)
       advice.push("Include more fiber (oats, beans) and cut down on saturated fats to manage cholesterol.");
 
-    //Default message based on category
     if (advice.length === 0) {
       if (category === "Low")
         advice.push("Excellent job — maintain your current heart-healthy lifestyle!");
@@ -40,7 +39,6 @@ export function generateHealthAdvice(
     if (inputs.STRESS_SCORE > 5)
       advice.push("Manage stress through breathing exercises, sleep, or mindfulness.");
 
-    //Refined category based guidance
     if (advice.length === 0) {
       if (category === "Normal") {
         advice.push("Great job — maintain your current healthy habits to keep glucose levels steady!");
