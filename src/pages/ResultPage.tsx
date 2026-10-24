@@ -507,7 +507,7 @@ const ResultPage: React.FC = () => {
         errorMessage.includes("daily ai plan limit")
       ) {
         setCustomPlan(
-          "You’ve reached today’s limit of 2 AI plans. You can still use prediction tools and view your results. AI health plan will be available again tomorrow."
+          "You’ve reached today’s limit of 1 AI plans. You can still use prediction tools and view your results. AI health plan will be available again tomorrow."
         );
       } else {
         console.error("Unexpected AI Plan Error:", err);

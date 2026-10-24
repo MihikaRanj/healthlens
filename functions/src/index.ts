@@ -9,8 +9,9 @@ const db = getFirestore();
 
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
-const PLAN_DAILY_LIMIT = 2;
-const CHAT_DAILY_LIMIT = 8;
+const PLAN_DAILY_LIMIT = 1;
+const CHAT_DAILY_LIMIT = 3;
+const GLOBAL_DAILY_LIMIT = 100;
 
 type HealthPlanRequest = {
   clientId: string;
@@ -49,26 +50,46 @@ function sanitizeClientId(clientId: string): string {
   return clientId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 100);
 }
 
+
 async function checkAndIncrementUsage(
   clientId: string,
   type: "plan" | "chat"
 ): Promise<void> {
   const today = getTodayKey();
   const safeClientId = sanitizeClientId(clientId);
+
   if (!safeClientId) {
-    throw new HttpsError("invalid-argument", "Missing valid client ID.");
+    throw new HttpsError(
+      "invalid-argument",
+      "Missing valid client ID."
+    );
   }
 
+  // Individual user's daily usage
   const docId = `${today}_${safeClientId}`;
   const ref = db.collection("aiUsage").doc(docId);
 
+  // Overall daily usage across all users
+  const globalRef = db.collection("aiGlobalUsage").doc(today);
+
   await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const data = snap.exists ? snap.data() || {} : {};
+
+    // Read both documents before writing anything
+    const userSnap = await tx.get(ref);
+    const globalSnap = await tx.get(globalRef);
+
+    const data = userSnap.exists
+      ? userSnap.data() || {}
+      : {};
 
     const planCount = Number(data.planCount || 0);
     const chatCount = Number(data.chatCount || 0);
 
+    const globalCount = Number(
+      globalSnap.data()?.totalCount || 0
+    );
+
+    // Check individual plan limit
     if (type === "plan" && planCount >= PLAN_DAILY_LIMIT) {
       throw new HttpsError(
         "resource-exhausted",
@@ -76,6 +97,7 @@ async function checkAndIncrementUsage(
       );
     }
 
+    // Check individual chat limit
     if (type === "chat" && chatCount >= CHAT_DAILY_LIMIT) {
       throw new HttpsError(
         "resource-exhausted",
@@ -83,19 +105,42 @@ async function checkAndIncrementUsage(
       );
     }
 
+    // Check overall daily limit
+    if (globalCount >= GLOBAL_DAILY_LIMIT) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "The daily AI usage limit has been reached. Please try again tomorrow."
+      );
+    }
+
+    // Update individual user's usage
     tx.set(
       ref,
       {
         date: today,
         clientId: safeClientId,
         updatedAt: FieldValue.serverTimestamp(),
-        planCount: type === "plan" ? planCount + 1 : planCount,
-        chatCount: type === "chat" ? chatCount + 1 : chatCount,
+        planCount:
+          type === "plan" ? planCount + 1 : planCount,
+        chatCount:
+          type === "chat" ? chatCount + 1 : chatCount,
+      },
+      { merge: true }
+    );
+
+    // Update global usage
+    tx.set(
+      globalRef,
+      {
+        date: today,
+        totalCount: globalCount + 1,
+        updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
   });
 }
+
 
 function validateHealthPlanRequest(data: unknown): asserts data is HealthPlanRequest {
   if (!data || typeof data !== "object") {
@@ -135,6 +180,15 @@ function validateChatRequest(data: unknown): asserts data is ChatRequest {
   if (!body.message || typeof body.message !== "string") {
     throw new HttpsError("invalid-argument", "Missing chat message.");
   }
+
+  
+if (body.message.length > 2000) {
+  throw new HttpsError(
+    "invalid-argument",
+    "Chat message is too long. Maximum 2000 characters."
+  );
+}
+
 }
 
 function describeInputs(
@@ -356,6 +410,7 @@ Instructions:
     try {
       const completion = await client.chat.completions.create({
         model: "gpt-4.1-mini",
+        max_completion_tokens: 600,
         temperature: 0.4,
         messages: [
           { role: "system", content: systemPrompt.trim() },
@@ -432,6 +487,7 @@ Instructions:
     try {
       const completion = await client.chat.completions.create({
         model: "gpt-4.1-mini",
+        max_completion_tokens: 300,
         temperature: 0.5,
         messages: [
           { role: "system", content: systemPrompt.trim() },

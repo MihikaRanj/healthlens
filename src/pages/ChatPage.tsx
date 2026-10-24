@@ -191,7 +191,7 @@ const ChatPage: React.FC = () => {
                 errorMessage.includes("daily ai chat limit")
             ) {
                 finalMessage =
-                    "You’ve reached today’s limit of 8 chat messages. You can still use prediction tools and view your results. AI chat will be available again tomorrow.";
+                    "You’ve reached today’s limit of 3 chat messages. You can still use prediction tools and view your results. AI chat will be available again tomorrow.";
             } else {
                 console.error("Unexpected Chat Error:", error);
             }
@@ -265,7 +265,7 @@ const ChatPage: React.FC = () => {
                                 lineHeight: 1.4,
                             }}
                         >
-                            You can send up to 8 coach messages each day. If you reach the limit, you can still use the health checks and come back tomorrow.
+                            You can send up to 3 coach messages each day. If you reach the limit, you can still use the health checks and come back tomorrow.
                         </p>
                     </IonText>
                 </div>
